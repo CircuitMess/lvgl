@@ -137,7 +137,7 @@ static gd_GIF * gif_open(gd_GIF * gif_base)
         memset(gif->frame, gif->bgindex, gif->width * gif->height);
     bgcolor = &gif->palette->colors[gif->bgindex*3];
 
-    if (bgcolor[0] || bgcolor[1] || bgcolor [2]){
+    if (bgcolor[0] || bgcolor[1] || bgcolor [2])
         for (i = 0; i < gif->width * gif->height; i++) {
 #if LV_COLOR_DEPTH == 32
             gif->canvas[i*4 + 0] = *(bgcolor + 2);
@@ -155,17 +155,6 @@ static gd_GIF * gif_open(gd_GIF * gif_base)
             gif->canvas[i*2 + 1] = 0xff;
 #endif
         }
-	}else{
-			for (i = 0; i < gif->width * gif->height; i++) {
-#if LV_COLOR_DEPTH == 32
-			gif->canvas[i*4 + 3] = 0x00;
-#elif LV_COLOR_DEPTH == 16
-			gif->canvas[i*3 + 2] = 0x00;
-#elif LV_COLOR_DEPTH == 8
-			gif->canvas[i*2 + 1] = 0x00;
-#endif
-			}
-		}
     gif->anim_start = f_gif_seek(gif, 0, LV_FS_SEEK_CUR);
     goto ok;
 fail:

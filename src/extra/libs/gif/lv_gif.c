@@ -85,6 +85,12 @@ void lv_gif_set_src(lv_obj_t * obj, const void * src)
     gifobj->imgdsc.header.h = gifobj->gif->height;
     gifobj->imgdsc.header.w = gifobj->gif->width;
     gifobj->last_call = lv_tick_get();
+    if(gifobj->gif->loop_count == 0) {
+        gifobj->loop = LV_GIF_LOOP_ON;
+    }
+    else {
+        gifobj->loop = LV_GIF_LOOP_DEFAULT;
+    }
 
     lv_img_set_src(obj, &gifobj->imgdsc);
 
@@ -99,6 +105,25 @@ void lv_gif_restart(lv_obj_t * obj)
 {
     lv_gif_t * gifobj = (lv_gif_t *) obj;
     gd_rewind(gifobj->gif);
+}
+
+void lv_gif_start(lv_obj_t * obj)
+{
+    lv_gif_t * gifobj = (lv_gif_t *) obj;
+    lv_timer_resume(gifobj->timer);
+    lv_timer_reset(gifobj->timer);
+}
+
+void lv_gif_stop(lv_obj_t * obj)
+{
+    lv_gif_t * gifobj = (lv_gif_t *) obj;
+    lv_timer_pause(gifobj->timer);
+}
+
+void lv_gif_set_loop(lv_obj_t * obj, lv_gif_loop_t loop)
+{
+    lv_gif_t * gifobj = (lv_gif_t *) obj;
+    gifobj->loop = loop;
 }
 
 /**********************
@@ -136,13 +161,24 @@ static void next_frame_task_cb(lv_timer_t * t)
     int has_next = gd_get_frame(gifobj->gif);
     if(has_next == 0) {
         /*It was the last repeat*/
-        if(gifobj->gif->loop_count == 1) {
-            lv_res_t res = lv_event_send(obj, LV_EVENT_READY, NULL);
-            if(res != LV_FS_RES_OK) return;
+        if(gifobj->loop == LV_GIF_LOOP_DEFAULT) {
+            if(gifobj->gif->loop_count == 1) {
+                lv_event_send(obj, LV_EVENT_READY, NULL);
+                return;
+            }
+            else {
+                if(gifobj->gif->loop_count > 1)  gifobj->gif->loop_count--;
+                gd_rewind(gifobj->gif);
+                gd_get_frame(gifobj->gif);
+            }
         }
-        else {
-            if(gifobj->gif->loop_count > 1)  gifobj->gif->loop_count--;
+        else if(gifobj->loop == LV_GIF_LOOP_ON) {
             gd_rewind(gifobj->gif);
+            gd_get_frame(gifobj->gif);
+        }
+        else if(gifobj->loop == LV_GIF_LOOP_SINGLE) {
+            lv_event_send(obj, LV_EVENT_READY, NULL);
+            return;
         }
     }
 
